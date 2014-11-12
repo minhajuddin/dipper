@@ -1,3 +1,4 @@
+//Package dipper is a small dependency injection library
 package dipper
 
 import (
@@ -6,20 +7,43 @@ import (
 	"sync"
 )
 
+//Constructor is a function which knows how to construct a type
 type Constructor func() interface{}
 
 var deps = make(map[reflect.Type]Constructor)
 
 var mutex = sync.RWMutex{}
 
-//Register
+//Register registers a type and its constructor function.
+//e.g.
+//    dipper.Register(sql.DB, func()interface{}{
+//      //code to create the db and return it
+//      return db;
+//    }
 func Register(val interface{}, c Constructor) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	deps[reflect.TypeOf(val)] = c
 }
 
-//Inject
+//MustInject is similar to inject but panics if
+//it finds a dependency and is unable to inject it
+func MustInject(val interface{}) bool {
+	err, ok := Inject(val)
+	if err != nil {
+		panic(err)
+	}
+	return ok
+}
+
+//Inject injects the right values into the dependency
+//e.g.
+//    dipper.Register(sql.DB, func()interface{}{
+//      //code to create the db and return it
+//      return db;
+//    }
+//    db := sql.DB{}
+//    dipper.Inject(&db)
 func Inject(val interface{}) (error, bool) {
 	mutex.RLock()
 	defer mutex.RUnlock()
